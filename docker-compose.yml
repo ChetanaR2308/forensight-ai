@@ -1,0 +1,39 @@
+services:
+  backend:
+    build: ./backend
+    env_file:
+      - ./backend/.env.example
+    volumes:
+      - ./backend/uploads:/app/backend/uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+
+  frontend:
+    build: ./frontend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  neo4j:
+    image: neo4j:5
+    profiles: ["optional"]
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+
+volumes:
+  mongo-data:
