@@ -1,0 +1,56 @@
+from abc import ABC, abstractmethod
+
+from app.models.domain import AuditRecord, Case, Evidence, Observation, User
+
+
+class Repository(ABC):
+    @abstractmethod
+    def list_users(self) -> list[User]: ...
+
+    @abstractmethod
+    def upsert_user(self, user: User) -> User: ...
+
+    @abstractmethod
+    def get_user_by_username(self, username: str) -> User | None: ...
+
+    @abstractmethod
+    def create_case(self, case: Case) -> Case: ...
+
+    @abstractmethod
+    def get_case(self, case_id: str) -> Case | None: ...
+
+    @abstractmethod
+    def list_cases(self) -> list[Case]: ...
+
+    @abstractmethod
+    def update_case(self, case: Case) -> Case: ...
+
+    @abstractmethod
+    def delete_case(self, case_id: str) -> None: ...
+
+    @abstractmethod
+    def add_evidence(self, evidence: Evidence) -> Evidence: ...
+
+    @abstractmethod
+    def get_evidence(self, evidence_id: str) -> Evidence | None: ...
+
+    @abstractmethod
+    def list_case_evidence(self, case_id: str) -> list[Evidence]: ...
+
+    @abstractmethod
+    def update_evidence(self, evidence: Evidence) -> Evidence: ...
+
+    @abstractmethod
+    def add_observation(self, observation: Observation) -> Observation: ...
+
+    @abstractmethod
+    def list_case_observations(self, case_id: str) -> list[Observation]: ...
+
+    @abstractmethod
+    def list_evidence_observations(self, evidence_id: str) -> list[Observation]: ...
+
+    @abstractmethod
+    def add_audit_record(self, record: AuditRecord) -> AuditRecord: ...
+
+    @abstractmethod
+    def list_audit_records(self, case_id: str | None = None) -> list[AuditRecord]: ...
