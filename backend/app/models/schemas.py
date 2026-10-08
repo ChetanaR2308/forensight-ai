@@ -5,10 +5,14 @@ from pydantic import BaseModel, Field
 from app.models.domain import (
     Case,
     Citation,
+    CorrelationRelationship,
+    EvidenceGap,
     Evidence,
     Event,
     InvestigationAnswer,
+    InvestigationRun,
     Observation,
+    ProcessingStatus,
     Report,
     Role,
 )
@@ -62,6 +66,14 @@ class TimelineResponse(BaseModel):
     events: list[Event]
 
 
+class ProcessingStatusResponse(BaseModel):
+    evidence_id: str
+    status: ProcessingStatus
+    version: str
+    error: str | None = None
+    metadata: dict = Field(default_factory=dict)
+
+
 class InvestigationQueryRequest(BaseModel):
     question: str = Field(min_length=3)
 
@@ -72,6 +84,20 @@ class InvestigationQueryResponse(BaseModel):
 
 class ReportResponse(BaseModel):
     report: Report
+
+
+class CorrelationResponse(BaseModel):
+    case_id: str
+    relationships: list[CorrelationRelationship]
+
+
+class GapResponse(BaseModel):
+    case_id: str
+    gaps: list[EvidenceGap]
+
+
+class WorkflowRunResponse(BaseModel):
+    run: InvestigationRun
 
 
 class ErrorResponse(BaseModel):

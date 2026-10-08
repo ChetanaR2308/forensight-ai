@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from app.models.domain import AuditRecord, Case, Evidence, Observation, User
+from app.models.domain import AuditRecord, Case, Event, Evidence, Finding, Observation, User
 
 
 class Repository(ABC):
@@ -48,6 +48,24 @@ class Repository(ABC):
 
     @abstractmethod
     def list_evidence_observations(self, evidence_id: str) -> list[Observation]: ...
+
+    @abstractmethod
+    def add_event(self, event: Event) -> Event: ...
+
+    @abstractmethod
+    def list_case_events(self, case_id: str) -> list[Event]: ...
+
+    @abstractmethod
+    def replace_case_events(self, case_id: str, events: list[Event]) -> None: ...
+
+    @abstractmethod
+    def add_finding(self, finding: Finding) -> Finding: ...
+
+    @abstractmethod
+    def list_case_findings(self, case_id: str) -> list[Finding]: ...
+
+    @abstractmethod
+    def replace_case_findings(self, case_id: str, findings: list[Finding]) -> None: ...
 
     @abstractmethod
     def add_audit_record(self, record: AuditRecord) -> AuditRecord: ...
