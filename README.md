@@ -1,143 +1,189 @@
-# ForenSight AI (Research MVP)
+# ForenSight AI
 
-> **Disclaimer (critical):** This project is human-in-the-loop research software, **not** an autonomous forensic decision maker. AI-assisted outputs are never proof of identity, guilt, or innocence.
+A secure, human-assisted digital-forensics research prototype for investigating cases with CCTV, images, PDFs, witness statements, and other evidence sources.
 
-ForenSight AI is a full-stack MVP for forensic investigation decision support. The implementation is intentionally deterministic-first, explainable, and runnable locally.
+> Critical: This tool is decision-support software only. AI output is never proof of identity, guilt, or innocence. Human investigators remain responsible for all conclusions.
 
-## Implemented MVP scope (honest)
+## Project goal
 
-- FastAPI backend with JWT auth and RBAC roles: `investigator`, `analyst`, `admin`
-- Case CRUD with ownership/collaborator access checks
-- Evidence upload with multipart handling, local object-storage-style filesystem writes, SHA-256 streaming hash, metadata, and audit logging
-- Evidence integrity verification endpoint that recomputes SHA-256
-- Typed models for cases, evidence, observations, events, findings, citations, uncertainty/conflict status, and audit records
-- Deterministic processing pipeline:
-  - Optional OpenCV metadata extraction when available
-  - OCR adapter interface with deterministic fallback
-  - Structured observation persistence with provenance
-- Deterministic timeline/correlation service
-- Investigation query endpoint returning grounded citations and **Insufficient evidence** when unsupported
-- Structured report endpoint with findings, conflicts, evidence gaps, uncertainty, and next actions
-- Replaceable integration interfaces with in-memory MVP adapters for graph/vector/langgraph orchestration
-- React + TypeScript + Vite + Tailwind UI with authentication, protected routes, dashboard, cases, evidence, timeline, assistant view, and report view
-- Backend + frontend tests and CI workflow
+ForenSight AI helps investigators:
+- upload CCTV footage, images, documents, and witness statements
+- preserve evidence integrity with SHA-256 hashing
+- extract metadata, events, timestamps, entities, and observations
+- correlate evidence across sources and time
+- identify conflicts, uncertainty, and evidence gaps
+- answer case-specific investigation questions with source citations
+- generate explainable investigation reports
 
-## Planned (not implemented) research integrations
+## Branch and working target
 
-- Production-grade MongoDB persistence layer
-- Optional LLM providers (disabled by default)
-- Live vector DB and Neo4j graph query integrations
-- Rich relationship graph visual analytics
+This repository branch is:
+- `spoorthi/complete-forensight-platform`
 
-## Monorepo structure
+Do not modify or merge `main`.
 
-- `backend/` FastAPI service
-  - `app/routers` API modules
-  - `app/services` domain logic and adapters
-  - `app/models` typed domain/schemas
-  - `app/repositories` repository abstraction and local fallback
-  - `app/tests` pytest coverage
-- `frontend/` React + TypeScript app
-  - dashboard, cases, case detail, upload/timeline/assistant/report views
-- `.github/workflows/ci.yml` backend/frontend checks
-- `docker-compose.yml` local stack (MongoDB required for service container, Neo4j optional profile)
+## What is implemented in this branch
 
-## Local setup
+The project includes a working MVP structure:
+- FastAPI backend with auth, case management, evidence upload, and investigation endpoints
+- JWT auth and demo role-based access for investigator, analyst, and admin roles
+- local filesystem storage with secure path handling and SHA-256 verification
+- deterministic evidence processing with metadata extraction and text parsing
+- timeline generation from observations and human-readable report generation
+- React + Vite + TypeScript UI for login, dashboard, and case workflows
+- backend tests for auth, case access, and evidence upload validation
 
-### Prereqs
-- Python 3.11+
-- Node.js 20+
-- Docker (optional but recommended)
+## Important limitations
 
-### Backend
-```bash
-cd backend
-pip install -e .[test]
-cp .env.example .env
-uvicorn app.main:app --reload
+This is a research prototype, not a production forensic system:
+- MongoDB, Neo4j, embeddings, and LLM integrations are optional, not required for the default local demo.
+- OpenCV and OCR are used when installed; the project remains deterministic and transparent when absent.
+- No external service is treated as a proof source.
+- Synthetic demo evidence is used for development and testing.
+
+## Local setup (Windows)
+
+### 1) Clone and switch branch
+
+```powershell
+git clone https://github.com/ChetanaR2308/forensight-ai.git
+cd forensight-ai
+git checkout spoorthi/complete-forensight-platform
 ```
 
-### Frontend
-```bash
+### 2) Backend
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -U pip
+pip install -e .[test]
+Copy-Item .env.example .env
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 3) Frontend
+
+```powershell
 cd frontend
 npm install
-cp .env.example .env
-npm run dev
+Copy-Item .env.example .env
+npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-### Full stack with Docker Compose
-```bash
+### 4) Optional Docker stack
+
+```powershell
 docker compose up --build
 ```
-
-Neo4j is optional and only started with:
-```bash
-docker compose --profile optional up neo4j
-```
-
-## Demo users (local development only)
-Seeded at startup (in-memory/local-safe defaults):
-- `admin / admin123`
-- `investigator / investigator123`
-- `analyst / analyst123`
-
-Change these in `backend/.env` for your local environment.
 
 ## Environment variables
 
 ### Backend (`backend/.env`)
-- `JWT_SECRET` (required outside local demo)
-- `ACCESS_TOKEN_EXPIRE_MINUTES`
-- `MAX_UPLOAD_SIZE_MB`
-- `UPLOADS_DIR`
-- `CORS_ORIGINS`
-- `USE_MONGO` (`false` by default in MVP)
-- `MONGO_URI`, `MONGO_DB_NAME`
-- `ENABLE_LLM` (`false` by default)
+
+```dotenv
+ENVIRONMENT=development
+JWT_SECRET=change-me-local-dev-only
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+MAX_UPLOAD_SIZE_MB=25
+UPLOADS_DIR=backend/uploads
+CORS_ORIGINS=http://localhost:5173
+USE_MONGO=false
+MONGO_URI=mongodb://mongodb:27017
+MONGO_DB_NAME=forensight
+ENABLE_LLM=false
+DEMO_ADMIN_PASSWORD=admin123
+DEMO_INVESTIGATOR_PASSWORD=investigator123
+DEMO_ANALYST_PASSWORD=analyst123
+NEO4J_URI=
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=neo4j123
+VECTOR_BACKEND=memory
+LLM_PROVIDER=demo
+LLM_MODEL=demo-grounded-model
+LLM_API_KEY=
+```
 
 ### Frontend (`frontend/.env`)
-- `VITE_API_BASE_URL` (default `http://localhost:8000`)
 
-## Security and data-handling assumptions
+```dotenv
+VITE_API_BASE_URL=http://localhost:8000
+```
 
-- Raw evidence files are written to local filesystem object-style storage (`backend/uploads`) and are **not** stored in MongoDB.
-- Uploads enforce max file size and safe filename/path handling.
-- Evidence SHA-256 is computed while streaming upload and re-verifiable.
-- Preserve provenance for every observation/finding: evidence ID, source, timestamp, processing stage, confidence, and uncertainty/conflict status.
-- Avoid committing uploads, secrets, model weights, or generated artifacts.
+## Demo users
+
+Local demo users are seeded automatically at startup:
+- `admin / admin123`
+- `investigator / investigator123`
+- `analyst / analyst123`
 
 ## API overview
 
 - `GET /health`
 - `POST /auth/token`
-- `GET|POST /cases`
-- `GET|PATCH|DELETE /cases/{case_id}`
-- `GET|POST /cases/{case_id}/evidence`
+- `GET /cases`
+- `POST /cases`
+- `GET /cases/{case_id}`
+- `PATCH /cases/{case_id}`
+- `DELETE /cases/{case_id}`
+- `GET /cases/{case_id}/evidence`
+- `POST /cases/{case_id}/evidence`
+- `GET /cases/{case_id}/evidence/{evidence_id}`
+- `GET /cases/{case_id}/evidence/{evidence_id}/download`
 - `GET /cases/{case_id}/evidence/{evidence_id}/integrity`
 - `GET /cases/{case_id}/evidence/timeline`
 - `POST /cases/{case_id}/investigation/query`
 - `GET /cases/{case_id}/investigation/report`
 - `GET /cases/{case_id}/graph/export`
 
-## Testing
+## Test and validation commands
 
-```bash
-make backend-test
-make frontend-test
-make frontend-build
+```powershell
+cd backend
+pytest
+
+cd ../frontend
+npm test
+npm run build
 ```
 
-## Ethics and reliability policy
+## Recommended workflow
 
-- Never invent facts from missing data.
-- If evidence is missing, ambiguous, or unsupported, return **Insufficient evidence** or **Inconclusive**.
-- Assistant responses must include uncertainty labels and citations where available.
-- Human investigators remain responsible for all conclusions.
+1. Start the backend.
+2. Start the frontend.
+3. Sign in using a demo user.
+4. Create a synthetic case.
+5. Upload text, image, or document evidence.
+6. Check the timeline and investigation query response.
+7. Review the report and evidence gaps.
+8. Treat all AI output as evidence-backed decision support only.
 
-## Incremental roadmap
+## Security and evidence handling
 
-1. Replace in-memory repository with full Mongo persistence implementation.
-2. Add optional pluggable LLM provider with strict grounded mode.
-3. Add Neo4j and vector DB adapters with retry/backoff and observability.
-4. Expand ingestion and validation for additional media formats.
-5. Add stronger audit export, signed integrity manifests, and role-scoped policy controls.
+- Raw evidence files are stored locally under `backend/uploads`.
+- Each file is hashed with SHA-256 during upload.
+- Integrity verification recomputes the hash and compares it with the recorded value.
+- Source evidence and uncertainty are preserved in every structured observation.
+- The platform never declares guilt or invents evidence.
+
+## Completion status
+
+This repository branch is a working research prototype rather than a production forensic platform.
+
+Implemented features in the codebase:
+- secure demo auth and role-based access
+- case creation and access control
+- file upload and SHA-256 integrity checks
+- deterministic extraction of metadata and evidence observations
+- timeline generation and structured report creation
+- UI screens for login, dashboard, and case workflows
+
+Optional or external dependencies that remain non-default:
+- MongoDB for persistent production storage
+- Neo4j graph database for graph-native persistence
+- vector database / embeddings for advanced semantic retrieval
+- open OCR and media-analysis model pipelines
+- LLM providers for optional grounded generative assistance
+
+These services are intentionally left optional and clearly documented where they are not yet active in the demo.

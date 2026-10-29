@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from app.models.domain import Citation, InvestigationAnswer, Observation, UncertaintyStatus
 
 
@@ -14,15 +16,28 @@ class DeterministicQueryService:
             if len(token) > 2
         ]
         tokens = [token for token in tokens if token]
-        matched = [obs for obs in observations if any(token in obs.value.lower() for token in tokens)]
+
+        matched: list[Observation] = []
+        for obs in observations:
+            text = (obs.value + " " + obs.source + " " + obs.kind).lower()
+            if any(token in text for token in tokens):
+                matched.append(obs)
 
         if not matched:
             return InvestigationAnswer(
-                answer="Insufficient evidence: no stored observations support this query.",
+                answer="Insufficient evidence: no stored observations support this question.",
                 mode="deterministic",
                 status=UncertaintyStatus.inconclusive,
                 citations=[],
             )
+
+        unique: list[Observation] = []
+        seen_ids: set[str] = set()
+        for obs in matched:
+            if obs.id in seen_ids:
+                continue
+            seen_ids.add(obs.id)
+            unique.append(obs)
 
         citations = [
             Citation(
@@ -31,12 +46,15 @@ class DeterministicQueryService:
                 source=obs.source,
                 timestamp=obs.source_timestamp or obs.created_at,
             )
-            for obs in matched[:5]
+            for obs in unique[:5]
         ]
 
-        statement = " ".join(obs.value for obs in matched[:2])
+        summary = " ; ".join(obs.value[:180] for obs in unique[:3])
+        if not summary:
+            summary = "The available observations mention relevant facts but contain no directly answerable text."
+
         return InvestigationAnswer(
-            answer=f"Observed evidence indicates: {statement}",
+            answer=f"Observed evidence indicates: {summary}",
             mode="deterministic",
             status=UncertaintyStatus.uncertain,
             citations=citations,

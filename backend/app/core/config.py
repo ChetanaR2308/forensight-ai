@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +19,13 @@ class Settings(BaseSettings):
     demo_admin_password: str = "admin123"
     demo_investigator_password: str = "investigator123"
     demo_analyst_password: str = "analyst123"
+    neo4j_uri: str = ""
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "neo4j123"
+    vector_backend: str = "memory"
+    llm_provider: str = "demo"
+    llm_model: str = "demo-grounded-model"
+    llm_api_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

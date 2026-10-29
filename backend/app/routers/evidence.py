@@ -1,7 +1,12 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from __future__ import annotations
 
-from app.deps import get_current_user
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
+
 from app.container import get_container
+from app.deps import get_current_user
 from app.models.domain import Evidence, ProcessingStatus, User
 from app.models.schemas import EvidenceUploadResponse, IntegrityCheckResponse, TimelineResponse
 from app.services.access import ensure_case_access
@@ -17,6 +22,39 @@ def list_case_evidence(case_id: str, user: User = Depends(get_current_user)) -> 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
     ensure_case_access(user, case)
     return repository.list_case_evidence(case_id)
+
+
+@router.get("/{evidence_id}")
+def get_evidence(case_id: str, evidence_id: str, user: User = Depends(get_current_user)) -> Evidence:
+    repository = get_container().repository
+    case = repository.get_case(case_id)
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    ensure_case_access(user, case)
+
+    evidence = repository.get_evidence(evidence_id)
+    if not evidence or evidence.case_id != case_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence not found")
+    return evidence
+
+
+@router.get("/{evidence_id}/download")
+def download_evidence(case_id: str, evidence_id: str, user: User = Depends(get_current_user)) -> FileResponse:
+    repository = get_container().repository
+    case = repository.get_case(case_id)
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    ensure_case_access(user, case)
+
+    evidence = repository.get_evidence(evidence_id)
+    if not evidence or evidence.case_id != case_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence not found")
+
+    file_path = Path(evidence.storage_path)
+    if not file_path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stored file missing")
+
+    return FileResponse(file_path, filename=evidence.filename, media_type=evidence.content_type)
 
 
 @router.post("", response_model=EvidenceUploadResponse, status_code=status.HTTP_201_CREATED)
